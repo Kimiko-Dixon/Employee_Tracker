@@ -40,9 +40,10 @@ function allDep() {
         }
         else{
             console.table(rows)
-        }
-       
+            startingPrompt()
+        } 
     })
+    
 }
 
 // Displays the role table
@@ -56,18 +57,28 @@ function allRoles() {
             }
             else{
                 console.table(rows)
+                startingPrompt()
             }
            
         })
 }
 
-// Displays the employees table
+// Displays the employees table (With tutor help)
 function allEmployees() {
     pool.query(`
     SELECT employee.id,employee.first_name,employee.last_name,role.title,role.salary,CONCAT(manager.first_name,' ',manager.last_name) AS manager
     FROM employee
     JOIN role ON role_id = role.id
-    LEFT JOIN employee manager ON manager.id = employee.manager_id;`, (err,{rows}) => err ? console.log(err) : console.table(rows))
+    LEFT JOIN employee manager ON manager.id = employee.manager_id;`, (err,{rows}) => {
+        if(err){
+            console.log(err)
+        }
+        else{
+            console.table(rows)
+            startingPrompt()
+        }
+       
+    })
 }
 
 // Adds a department
@@ -83,7 +94,16 @@ async function addDept() {
         )
     
     // Adds the department to the database
-    pool.query(`INSERT INTO department (name) VALUES ($1)`,[Newdept.deptName],(err,{rows}) => err ? console.log(err) : console.log('Added department'))
+    pool.query(`INSERT INTO department (name) VALUES ($1)`,[Newdept.deptName],(err,{rows}) => {
+        if(err){
+            console.log(err)
+        }
+        else{
+            console.log('Added department')
+            startingPrompt()
+        }
+       
+    })
         
 }
 
@@ -99,7 +119,7 @@ function getDepts() {
 
 }
 
-// Add role prompts
+// Add role prompts(With TA help)
 function addRoleQs(deptInfo) {
     // Array of the department objects
     const deptChoices = deptInfo.map(dept => ({
@@ -132,11 +152,20 @@ function addRoleQs(deptInfo) {
 // Adds the role to the databse
 function insertRole({roleName,salary,dept}){
     
-    return pool.query(`INSERT INTO role (title,salary,department_id) VALUES ($1,$2,$3)`,[roleName, salary, dept ],(err) => err ? console.log(err) : console.log('Added role'))
+    return pool.query(`INSERT INTO role (title,salary,department_id) VALUES ($1,$2,$3)`,[roleName, salary, dept ],(err,{rows}) => {
+        if(err){
+            console.log(err)
+        }
+        else{
+            console.log('Added role')
+            startingPrompt()
+        }
+       
+    })
     
 }
 
-// Runs through the add roll process
+// Runs through the add roll process (With TA help)
 function addRole(){
     return getDepts()
     .then((depts) => addRoleQs(depts))
@@ -165,7 +194,7 @@ function getEmployee(){
 }
 
 
-function addEmployeeQs(roleInfo,employeeInfo){
+function addEmployeeQs(roleInfo,managerInfo){
 
     // Array of the role objects
     const employeeRole = roleInfo.map(role => ({
@@ -173,10 +202,12 @@ function addEmployeeQs(roleInfo,employeeInfo){
         value: role.id
     }))
     // Array of the employee objects
-    const employees = employeeInfo.map(employee => ({
+    const manager = managerInfo.map(employee => ({
         name: employee.employee_name,
         value: employee.id
     }))
+
+    manager.splice(0,0,{name:'None',value:null})
     //Prompt questions
     const questions = [{
         type: 'input',
@@ -198,7 +229,7 @@ function addEmployeeQs(roleInfo,employeeInfo){
         type: 'list',
         message: 'Who is the employee\'s manager?',
         name: 'empManager',
-        choices: employees
+        choices: manager
     },
     ]
         
@@ -207,7 +238,16 @@ function addEmployeeQs(roleInfo,employeeInfo){
 
 //Insert employee into the database
 function insertEmployee({firstName,lastName,empRole,empManager}){
-    return pool.query(`INSERT INTO employee (first_name,last_name,role_id,manager_id) VALUES ($1,$2,$3,$4)`,[firstName,lastName,empRole,empManager],(err) => err ? console.log(err) : console.log('Added role'))
+    return pool.query(`INSERT INTO employee (first_name,last_name,role_id,manager_id) VALUES ($1,$2,$3,$4)`,[firstName,lastName,empRole,empManager],(err,{rows}) => {
+        if(err){
+            console.log(err)
+        }
+        else{
+            console.log('Added employee')
+            startingPrompt()
+        }
+       
+    })
 }
 
 //Gets the list of roles and employees
@@ -260,7 +300,16 @@ function addUpdateEmployeeQs(roleInfo,employeeInfo){
 
 //Updates the employee role
 function updateEmployee({empNewRole,employee}){
-    return pool.query(`UPDATE employee SET role_id = $1 WHERE employee.id = $2`,[empNewRole,employee],(err) => err ? console.log(err) : console.log('Updated employee role'))
+    return pool.query(`UPDATE employee SET role_id = $1 WHERE employee.id = $2`,[empNewRole,employee],(err,{rows}) => {
+        if(err){
+            console.log(err)
+        }
+        else{
+            console.log('Updated employee role')
+            startingPrompt()
+        }
+       
+    })
 }
 
 // Runs through the update employee role process
@@ -271,10 +320,9 @@ function updateEmpRole() {
     .catch(err => console.log(err))
 }
 
-    
-
-//Response when an option is selected  
-return homePrompt()
+//Response when an option is selected 
+function startingPrompt(){
+    homePrompt()
     .then(({ homeSelect }) => {
         switch (homeSelect) {
             case homeSelectChoices[0]:
@@ -298,8 +346,11 @@ return homePrompt()
             case homeSelectChoices[6]:
                 updateEmpRole()
                 break;
+
         }
     })
 
+} 
 
+startingPrompt()
 
